@@ -3,6 +3,7 @@
 """ clean_house_smach.py - Version 1.0 2013-04-20
 
     Control a robot to move from "room to room" and "clean" each room appropriately.
+    Управляйте роботом, чтобы перейти от «комнаты к комнате» и «очистить» каждую комнату соответственно.
 
     Created for the Pi Robot Project: http://www.pirobot.org
     Copyright (c) 2013 Patrick Goebel.  All rights reserved.
@@ -32,6 +33,7 @@ import datetime
 from collections import OrderedDict
 
 # A list of rooms and tasks
+# Список комнат и задач
 task_list = {'living_room':['vacuum_floor'], 'kitchen':['mop_floor'], 'bathroom':['scrub_tub', 'mop_floor'], 'hallway':['vacuum_floor']}
 
 class VacuumFloor(State):
@@ -141,12 +143,15 @@ class main():
         rospy.init_node('clean_house', anonymous=False)
         
         # Set the shutdown function (stop the robot)
+        # Установите функцию выключения (остановите робота)
         rospy.on_shutdown(self.shutdown)
         
         # Initialize a number of parameters and variables
+        # Инициализировать ряд параметров и переменных
         setup_task_environment(self)
         
         # Turn the room locations into SMACH move_base action states
+        # Поверните места в местах действия SMACH move_base
         nav_states = {}
         
         for room in self.room_locations.iterkeys():         
@@ -159,40 +164,51 @@ class main():
             nav_states[room] = move_base_state
 
         ''' Create individual state machines for assigning tasks to each room '''
+        ''' Создайте отдельные государственные машины для назначения задач в каждой комнате '''
 
         # Create a state machine for the living room subtask(s)
+        # Создайте конечный автомат для подзадачи гостиной.
         sm_living_room = StateMachine(outcomes=['succeeded','aborted','preempted'])
         
         # Then add the subtask(s)
+        # Затем добавьте подзадачу(ы)
         with sm_living_room:
             StateMachine.add('VACUUM_FLOOR', VacuumFloor('living_room', 5), transitions={'succeeded':'','aborted':'','preempted':''})
 
         # Create a state machine for the kitchen subtask(s)
+        # Создать конечный автомат для кухонной подзадачи (ы)
         sm_kitchen = StateMachine(outcomes=['succeeded','aborted','preempted'])
         
         # Then add the subtask(s)
+        # Затем добавьте подзадачу (ы)
         with sm_kitchen:
             StateMachine.add('MOP_FLOOR', MopFloor('kitchen', 5), transitions={'succeeded':'','aborted':'','preempted':''})
 
         # Create a state machine for the bathroom subtask(s)
+        # Создайте конечный автомат для подзадачи ванной комнаты.
         sm_bathroom = StateMachine(outcomes=['succeeded','aborted','preempted'])
         
         # Then add the subtasks
+        # Затем добавьте подзадачи
         with sm_bathroom:
             StateMachine.add('SCRUB_TUB', ScrubTub('bathroom', 7), transitions={'succeeded':'MOP_FLOOR'})
             StateMachine.add('MOP_FLOOR', MopFloor('bathroom', 5), transitions={'succeeded':'','aborted':'','preempted':''})
 
         # Create a state machine for the hallway subtask(s)
+        # Создать конечный автомат для подзадачи в коридоре
         sm_hallway = StateMachine(outcomes=['succeeded','aborted','preempted'])
         
         # Then add the subtasks
+        # Затем добавьте подзадачи
         with sm_hallway:
             StateMachine.add('VACUUM_FLOOR', VacuumFloor('hallway', 5), transitions={'succeeded':'','aborted':'','preempted':''})
 
         # Initialize the overall state machine
+        # Инициализировать общий конечный автомат
         sm_clean_house = StateMachine(outcomes=['succeeded','aborted','preempted'])
             
         # Build the clean house state machine from the nav states and room cleaning states
+        # Построить машину состояния чистого дома из состояний штатов и состояний очистки помещения
         with sm_clean_house:            
             StateMachine.add('START', nav_states['hallway'], transitions={'succeeded':'LIVING_ROOM','aborted':'LIVING_ROOM','preempted':'LIVING_ROOM'})
             
@@ -218,13 +234,16 @@ class main():
             StateMachine.add('HALLWAY', nav_states['hallway'], transitions={'succeeded':'HALLWAY_TASKS','aborted':'','preempted':''})
             
             # When the tasks are done, stop
+            # Когда задачи будут выполнены, остановите
             StateMachine.add('HALLWAY_TASKS', sm_hallway, transitions={'succeeded':'','aborted':'','preempted':''})         
                         
         # Create and start the SMACH introspection server
+        # Создайте и запустите сервер интроспекции SMACH
         intro_server = IntrospectionServer('clean_house', sm_clean_house, '/SM_ROOT')
         intro_server.start()
         
         # Execute the state machine
+        # Выполнить конечный автомат
         sm_outcome = sm_clean_house.execute()
                 
         if len(task_list) > 0:
