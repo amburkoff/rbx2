@@ -5,6 +5,8 @@
     
     Command a robot to move in a square while monitoring (simulated) battery levels
     and recharging when battery is low.
+    Командовать роботом для перемещения в квадрате при контроле (моделировании) уровня заряда батареи
+     и подзарядки, когда аккумулятор разряжен.
 
     Created for the Pi Robot Project: http://www.pirobot.org
     Copyright (c) 2013 Patrick Goebel.  All rights reserved.
@@ -33,6 +35,7 @@ class Patrol():
         rospy.init_node("patrol_script")
         
         # Set the shutdown function (stop the robot)
+        # Установите функцию выключения (остановите робота)
         rospy.on_shutdown(self.shutdown)
         
         rate = rospy.get_param("~rate", 10)
@@ -41,28 +44,36 @@ class Patrol():
         self.rate = rospy.Rate(rate)
         
         # Initialize a number of parameters and variables
+        # Инициализировать ряд параметров и переменных
         setup_task_environment(self)
         
         # Initialize the low battery flag
+        # Инициализировать флаг разряженной батареи
         self.low_battery = False
         
         # A flag to indicate that we are recharging
+        # Флаг, указывающий, что мы перезаряжаем
         self.recharging = False
         
         # Set the target location to the first waypoint
+        # Установить целевое местоположение на первую путевую точку
         self.location = 1
         
         # We also need to know the last location
+        # Нам также нужно знать последнее место
         self.last_location = 1
         
         # Wait for the simulated battery service
+        # Подождите, пока имитируемая батарея
         rospy.loginfo("Waiting for battery service")
         rospy.wait_for_service('/battery_simulator/set_battery_level')
         
         # Create the charge battery service proxy
+        # Создать прокси-сервер службы зарядки
         self.charge_battery = rospy.ServiceProxy('battery_simulator/set_battery_level', SetBatteryLevel)
 
         # Subscribe to the fake battery level topic
+        # Подпишитесь на тему поддельной батареи
         rospy.wait_for_message('battery_level', Float32)
         rospy.Subscriber('battery_level', Float32, self.battery_cb)
         
